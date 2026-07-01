@@ -1,155 +1,54 @@
-# ByteVox RAG System — Technical Assignment Submission
+# ByteVox RAG System
 
-**Candidate:** Manshul 
-
-**Tech Stack:** FastAPI • ChromaDB • BM25 • Sentence Transformers • Groq / Anthropic • SQLite • Streamlit • Docker
+A production-ready Retrieval-Augmented Generation (RAG) system that ingests enterprise documents, performs hybrid retrieval using dense semantic search and sparse keyword search, and generates grounded answers with source attribution through Large Language Models.
 
 ---
 
-# Project Overview
+## 🛠️ Tech Stack & Key Design Choices
 
-This project implements a **Retrieval-Augmented Generation (RAG)** assistant capable of ingesting enterprise documentation, indexing it using both dense and sparse retrieval techniques, and answering user questions grounded entirely in the indexed documents.
+### FastAPI
+Chosen for building a high-performance REST API with automatic request validation, interactive Swagger documentation, and asynchronous request handling.
 
-The system combines:
+### ChromaDB
+Used as the persistent vector database for storing semantic embeddings and performing efficient cosine similarity search.
 
-- Dense semantic retrieval using Sentence Transformers + ChromaDB
-- Sparse keyword retrieval using BM25
-- Hybrid Retrieval using Reciprocal Rank Fusion (RRF)
-- LLM-based answer generation using Groq (default) or Anthropic
-- SQLite-based observability
-- Streamlit evaluation dashboard
-- Dockerized deployment
+### Sentence Transformers (`all-MiniLM-L6-v2`)
+Generates lightweight 384-dimensional embeddings that provide fast semantic retrieval while maintaining high retrieval quality.
 
-The repository uses the official **Nexus AI** knowledge base provided with the assignment.
+### Rank-BM25
+Implements sparse lexical retrieval to accurately capture exact keyword matches, technical terms, and domain-specific queries.
 
----
+### Hybrid Retrieval (Reciprocal Rank Fusion)
+Combines dense vector search from ChromaDB with BM25 keyword search using Reciprocal Rank Fusion (RRF), improving both semantic understanding and exact-match retrieval.
 
-# Features
+### Groq / Anthropic LLM
+Supports Groq (Llama 3.1) as the default inference provider with Anthropic as an alternative. The LLM generates answers strictly grounded in the retrieved document context to minimize hallucinations.
 
-## Core Features
-
-- Document ingestion (.txt, .md, .pdf)
-- Automatic chunking
-- Dense embeddings using Sentence Transformers
-- Persistent vector storage using ChromaDB
-- BM25 sparse retrieval
-- Hybrid Retrieval (Dense + Sparse)
-- Reciprocal Rank Fusion (RRF)
-- FastAPI REST API
-- Source attribution
-- Configurable LLM provider
-- Persistent vector storage
+### SQLite
+Stores query logs, retrieved chunks, and response latency for observability and evaluation.
 
 ---
 
-## Bonus Features
+# 🚀 Getting Started
 
-### Bonus A — Observability
+## 1. Configure Environment Variables
 
-- SQLite query logging
-- Response latency tracking
-- Retrieved chunk logging
-- `/logs` endpoint
-
-### Bonus B — Containerization
-
-- Dockerfile
-- docker-compose support
-
-### Bonus C — Advanced Retrieval
-
-- Dense Retrieval
-- BM25 Retrieval
-- Reciprocal Rank Fusion
-- Lightweight lexical reranking
-
-### Bonus D — Evaluation Dashboard
-
-Interactive Streamlit dashboard displaying:
-
-- Ask questions
-- Generated answers
-- Retrieved chunks
-- Sources
-- Retrieval scores
-- Query latency
-- Recent query history
-
----
-
-# Project Structure
-
-```text
-bytevox-rag/
-│
-├── app/
-│   ├── chunking.py
-│   ├── config.py
-│   ├── ingestion.py
-│   ├── llm.py
-│   ├── main.py
-│   ├── observability.py
-│   ├── retrieval.py
-│   ├── schemas.py
-│   └── vectorstore.py
-│
-├── data/
-│   └── docs/
-│       ├── 01_nexus_ai_overview.txt
-│       ├── 02_nexus_api_reference.txt
-│       ├── 03_nexus_architecture_internals.txt
-│       ├── 04_nexus_troubleshooting_guide.txt
-│       ├── 05_nexus_changelog.txt
-│       ├── 06_nexus_sdk_guide.txt
-│       ├── 07_nexus_security_compliance.txt
-│       └── 08_nexus_ml_best_practices.txt
-│
-├── scripts/
-│   ├── ingest.py
-│   └── evaluate.py
-│
-├── storage/
-│
-├── dashboard.py
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example
-└── README.md
-```
-
----
-
-# Installation
-
-## Clone Repository
+Create a `.env` file from the example:
 
 ```bash
-git clone https://github.com/manshul144/bytevox-rag.git
-cd bytevox-rag
+cp .env.example .env
+```
+
+Update your API credentials:
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
 ```
 
 ---
 
-## Create Virtual Environment
-
-### Windows
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
-
-### Linux / macOS
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
----
-
-## Install Dependencies
+## 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -157,93 +56,35 @@ pip install -r requirements.txt
 
 ---
 
-# Environment Configuration
+## 3. Ingest Documents
 
-Copy
-
-```bash
-cp .env.example .env
-```
-
-Update your `.env`
-
-```env
-LLM_PROVIDER=groq
-
-GROQ_API_KEY=your_groq_api_key_here
-
-GROQ_MODEL=llama-3.1-8b-instant
-
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-```
-
----
-
-# Knowledge Base
-
-The repository contains the official assignment documents:
+Place supported documents (`.txt`, `.md`, `.pdf`) inside:
 
 ```
 data/docs/
 ```
 
-```
-01_nexus_ai_overview.txt
-02_nexus_api_reference.txt
-03_nexus_architecture_internals.txt
-04_nexus_troubleshooting_guide.txt
-05_nexus_changelog.txt
-06_nexus_sdk_guide.txt
-07_nexus_security_compliance.txt
-08_nexus_ml_best_practices.txt
-```
-
-To use your own documents, simply replace or add supported `.txt`, `.md`, or `.pdf` files in `data/docs/` and run the ingestion process again.
-
----
-
-# Ingest Documents
-
-Run:
+Then build the vector and BM25 indexes:
 
 ```bash
 python scripts/ingest.py
 ```
 
-or
+or via the API:
 
 ```
 POST /ingest
 ```
 
-Example response:
-
-```json
-{
-  "documents_processed": 8,
-  "chunks_indexed": 156,
-  "files": [
-    "01_nexus_ai_overview.txt",
-    "02_nexus_api_reference.txt",
-    "03_nexus_architecture_internals.txt",
-    "04_nexus_troubleshooting_guide.txt",
-    "05_nexus_changelog.txt",
-    "06_nexus_sdk_guide.txt",
-    "07_nexus_security_compliance.txt",
-    "08_nexus_ml_best_practices.txt"
-  ]
-}
-```
-
 ---
 
-# Start API
+## 4. Start the API Server
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Swagger UI
+Swagger Documentation:
 
 ```
 http://localhost:8000/docs
@@ -251,244 +92,34 @@ http://localhost:8000/docs
 
 ---
 
-# API Endpoints
-
-## POST /query
-
-Example Request
-
-```json
-{
-  "question": "What is Nexus AI?",
-  "top_k": 4
-}
-```
-
-Example Response
-
-```json
-{
-  "answer": "Nexus AI is a cloud-native machine learning platform developed by Meridian Labs, designed to accelerate the deployment and management of production ML workloads.",
-  "sources": [
-    "01_nexus_ai_overview.txt"
-  ],
-  "retrieved_chunks": [
-    {
-      "source": "01_nexus_ai_overview.txt",
-      "chunk_id": "01_nexus_ai_overview.txt::1",
-      "score": 0.0375
-    }
-  ],
-  "latency_ms": 1382.83
-}
-```
-
----
-
-## POST /ingest
-
-Indexes all documents in `data/docs`.
-
----
-
-## GET /health
-
-Example
-
-```json
-{
-  "status":"ok",
-  "documents_indexed":156
-}
-```
-
----
-
-## GET /logs
-
-Returns recent query logs including
-
-- User Question
-- Generated Answer
-- Retrieved Chunks
-- Latency
-- Timestamp
-
----
-
-# Streamlit Dashboard
-
-Launch
+## 5. Launch the Evaluation Dashboard
 
 ```bash
 streamlit run dashboard.py
 ```
 
-Dashboard Features
+The dashboard allows you to:
 
-- Ask questions
-- View generated answers
-- View retrieved chunks
-- Retrieval scores
-- Sources used
-- Recent queries
-- Total queries
-- Average latency
+- Ask questions over indexed documents
+- View retrieved source chunks
+- Inspect retrieval scores
+- Monitor response latency
+- Review recent query history
 
 ---
 
-# Docker Deployment
+## 📊 Evaluation & System Highlights
 
-## Build
+The system combines semantic and lexical retrieval to improve answer quality across diverse enterprise documentation.
 
-```bash
-docker compose build
-```
+**Key capabilities include:**
 
-## Ingest
+- Hybrid Retrieval using ChromaDB + BM25
+- Reciprocal Rank Fusion (RRF) for result fusion
+- Source-grounded answer generation
+- Automatic document chunking and indexing
+- Persistent vector storage
+- Query observability with SQLite
+- Interactive evaluation dashboard
 
-```bash
-docker compose --profile ingest up ingest
-```
-
-## Start API
-
-```bash
-docker compose up api
-```
-
----
-
-# Retrieval Pipeline
-
-```
-User Question
-        │
-        ▼
-Sentence Transformer Embedding
-        │
-        ▼
-Dense Search (ChromaDB)
-
-        +
-
-Sparse Search (BM25)
-
-        │
-        ▼
-
-Reciprocal Rank Fusion (RRF)
-
-        │
-        ▼
-
-Lexical Reranking
-
-        │
-        ▼
-
-Top-K Chunks
-
-        │
-        ▼
-
-Groq / Anthropic LLM
-
-        │
-        ▼
-
-Grounded Answer
-```
-
----
-
-# Design Decisions
-
-The retrieval system combines dense semantic retrieval with sparse lexical retrieval.
-
-**Dense Retrieval**
-
-- Sentence Transformers
-- ChromaDB
-- Cosine Similarity
-
-**Sparse Retrieval**
-
-- BM25 (Okapi)
-
-**Fusion**
-
-- Reciprocal Rank Fusion (RRF)
-
-**Reranking**
-
-- Lightweight lexical overlap boost
-
-This hybrid approach improves recall for both semantic and exact keyword queries.
-
----
-
-# Environment Variables
-
-| Variable | Default |
-|----------|----------|
-| LLM_PROVIDER | groq |
-| GROQ_MODEL | llama-3.1-8b-instant |
-| EMBEDDING_MODEL | all-MiniLM-L6-v2 |
-| CHUNK_SIZE | 800 |
-| CHUNK_OVERLAP | 120 |
-| TOP_K_DENSE | 8 |
-| TOP_K_SPARSE | 8 |
-| TOP_K_FINAL | 4 |
-| RRF_K | 60 |
-
----
-
-# Documentation
-
-The following documents accompany this submission:
-
-- Design Decisions
-- Production Architecture
-- Architecture Diagram
-- Reflection Write-up
-
-These are submitted separately as requested.
-
----
-
-# Future Improvements
-
-- Cross-Encoder reranking
-- Authentication & Authorization
-- Streaming responses
-- Redis caching
-- CI/CD pipeline
-- Kubernetes deployment
-- Multi-user support
-- Feedback-driven retrieval optimization
-
----
-
-# Assignment Completion
-
-| Requirement | Status |
-|------------|---------|
-| Part 1 – RAG API | ✅ |
-| Part 2 – Design Decisions | ✅ |
-| Part 3 – Production Architecture | ✅ |
-| Part 4 – Reflection | ✅ |
-| Bonus A – Observability | ✅ |
-| Bonus B – Docker | ✅ |
-| Bonus C – Hybrid Retrieval | ✅ |
-| Bonus D – Dashboard | ✅ |
-
----
-
-# Author
-
-**Manshul**
-
-B.Tech CSE (AI & ML)
-
-FastAPI • Machine Learning • NLP • RAG • LLM Applications
+To reduce hallucinations, the LLM is instructed to answer **only from the retrieved document context**. If the required information is not present in the indexed documents, the system responds that it does not have sufficient information rather than generating unsupported answers.
