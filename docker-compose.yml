@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist Chroma index and BM25 pickle across container restarts
+      - ./storage:/app/storage
+      # Mount your documents into the container
+      - ./data/docs:/app/data/docs
+      # Cache downloaded embedding model weights between builds
+      - model_cache:/app/.cache/transformers
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: run ingestion as a one-shot container before starting the API
+  ingest:
+    build: .
+    command: python scripts/ingest.py
+    volumes:
+      - ./storage:/app/storage
+      - ./data/docs:/app/data/docs
+      - model_cache:/app/.cache/transformers
+    env_file:
+      - .env
+    profiles:
+      - ingest   # only runs with: docker compose --profile ingest up ingest
+
+volumes:
+  model_cache:
